@@ -122,7 +122,11 @@ function App() {
 
             {/* Forecast Chart */}
             <section className="section">
-              <ForecastChart data={forecastData} />
+              <ForecastChart
+                data={forecastData}
+                transactions={futureTransactions}
+                startingBalance={startingBalance}
+              />
             </section>
 
             {/* Summary Statistics */}

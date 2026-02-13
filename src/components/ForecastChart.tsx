@@ -1,3 +1,4 @@
+
 import {
   LineChart,
   Line,
@@ -9,19 +10,25 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import type { CalculationResult } from "../types";
+import type { CalculationResult, Transaction } from "../types";
 import { formatDateString } from "../lib/forecast";
+import { CustomTooltip } from "./CustomTooltip";
+
 
 interface ForecastChartProps {
   data: CalculationResult[];
+  transactions?: Transaction[];
+  startingBalance?: number;
 }
 
-export const ForecastChart = ({ data }: ForecastChartProps) => {
-  // Format data for Recharts
-  const chartData = data.map((item) => ({
+
+export const ForecastChart = ({ data, transactions = [], startingBalance = 0 }: ForecastChartProps) => {
+  // Format data for Recharts, add index for tooltip
+  const chartData = data.map((item, idx) => ({
     date: formatDateString(item.date),
     balance: item.balance,
     cash_flow: item.cash_flow,
+    index: idx,
   }));
 
   return (
@@ -39,9 +46,7 @@ export const ForecastChart = ({ data }: ForecastChartProps) => {
             label={{ value: "Balance (€)", angle: -90, position: "insideLeft" }}
           />
           <Tooltip
-            formatter={(value: number | undefined) =>
-              value !== undefined ? value.toFixed(2) : "N/A"
-            }
+            content={<CustomTooltip transactions={transactions} startingBalance={startingBalance} />}
             labelFormatter={(label: any) => `Date: ${label}`}
           />
           <Legend />
