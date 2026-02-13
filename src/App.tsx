@@ -46,6 +46,18 @@ function App() {
     }
   };
 
+  const handleDuplicateTransaction = async (transaction: typeof transactions[0]) => {
+    setIsSubmitting(true);
+    try {
+      // Remove id and create a new transaction object
+      const { id, ...rest } = transaction;
+      // Optionally, tweak fields (e.g., add ' (copy)' to name)
+      await add({ ...rest, name: rest.name + " (copy)" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Calculate forecast
   const forecastData = (() => {
     const today = new Date();
@@ -83,6 +95,7 @@ function App() {
                 transactions={futureTransactions}
                 onDelete={handleDeleteTransaction}
                 onEdit={handleUpdateTransaction}
+                onDuplicate={handleDuplicateTransaction}
                 isLoading={isSubmitting}
               />
             </section>

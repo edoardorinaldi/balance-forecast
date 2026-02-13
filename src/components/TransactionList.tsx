@@ -6,6 +6,7 @@ interface TransactionListProps {
   transactions: Transaction[];
   onDelete: (id: number) => Promise<void>;
   onEdit: (id: number, field: keyof Omit<Transaction, "id">, value: any) => Promise<void>;
+  onDuplicate?: (transaction: Transaction) => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -13,6 +14,7 @@ export const TransactionList = ({
   transactions,
   onDelete,
   onEdit,
+  onDuplicate = async () => {},
   isLoading = false,
 }: TransactionListProps) => {
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -272,6 +274,15 @@ export const TransactionList = ({
                         title="Delete"
                       >
                         ✕
+                      </button>
+                      <button
+                        onClick={() => onDuplicate(transaction)}
+                        disabled={isLoading}
+                        className="btn-small btn-duplicate"
+                        title="Duplicate"
+                        style={{ marginRight: 4 }}
+                      >
+                        ⧉
                       </button>
                     </>
                   )}
