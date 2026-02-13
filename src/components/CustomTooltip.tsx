@@ -37,7 +37,7 @@ function getTransactionsForDate(transactions: Transaction[], date: string) {
 }
 
 export const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, transactions, startingBalance }) => {
-  if (!active || !payload || !payload.length) return null;
+  if (!active || !payload || !payload.length || !label) return null;
   const date = label.replace("Date: ", "");
   const dayTransactions = getTransactionsForDate(transactions, date);
   // Find the index of the current day in the chart (payload[0].payload.index)
