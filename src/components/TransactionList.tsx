@@ -102,7 +102,18 @@ export const TransactionList = ({
                       autoFocus
                     />
                   ) : (
-                    transaction.name
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {transaction.name}
+                      <button
+                        onClick={() => handleEdit(transaction, "name")}
+                        disabled={isLoading}
+                        className="btn-small btn-edit"
+                        title="Edit Name"
+                        style={{ marginLeft: 4 }}
+                      >
+                        ✎
+                      </button>
+                    </span>
                   )}
                 </td>
                 <td>
@@ -115,7 +126,18 @@ export const TransactionList = ({
                       autoFocus
                     />
                   ) : (
-                    transaction.amount.toFixed(2)
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {transaction.amount.toFixed(2)}
+                      <button
+                        onClick={() => handleEdit(transaction, "amount")}
+                        disabled={isLoading}
+                        className="btn-small btn-edit"
+                        title="Edit Amount"
+                        style={{ marginLeft: 4 }}
+                      >
+                        ✎
+                      </button>
+                    </span>
                   )}
                 </td>
                 <td>
@@ -127,11 +149,22 @@ export const TransactionList = ({
                       autoFocus
                     />
                   ) : (
-                    formatDateString(
-                      typeof transaction.start_date === "string"
-                        ? new Date(transaction.start_date)
-                        : transaction.start_date
-                    )
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {formatDateString(
+                        typeof transaction.start_date === "string"
+                          ? new Date(transaction.start_date)
+                          : transaction.start_date
+                      )}
+                      <button
+                        onClick={() => handleEdit(transaction, "start_date")}
+                        disabled={isLoading}
+                        className="btn-small btn-edit"
+                        title="Edit Start Date"
+                        style={{ marginLeft: 4 }}
+                      >
+                        ✎
+                      </button>
+                    </span>
                   )}
                 </td>
                 <td>
@@ -143,11 +176,22 @@ export const TransactionList = ({
                       autoFocus
                     />
                   ) : (
-                    formatDateString(
-                      typeof transaction.end_date === "string"
-                        ? new Date(transaction.end_date)
-                        : transaction.end_date
-                    )
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {formatDateString(
+                        typeof transaction.end_date === "string"
+                          ? new Date(transaction.end_date)
+                          : transaction.end_date
+                      )}
+                      <button
+                        onClick={() => handleEdit(transaction, "end_date")}
+                        disabled={isLoading}
+                        className="btn-small btn-edit"
+                        title="Edit End Date"
+                        style={{ marginLeft: 4 }}
+                      >
+                        ✎
+                      </button>
+                    </span>
                   )}
                 </td>
                 <td>
@@ -161,7 +205,18 @@ export const TransactionList = ({
                       autoFocus
                     />
                   ) : (
-                    transaction.frequency
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {transaction.frequency}
+                      <button
+                        onClick={() => handleEdit(transaction, "frequency")}
+                        disabled={isLoading}
+                        className="btn-small btn-edit"
+                        title="Edit Frequency"
+                        style={{ marginLeft: 4 }}
+                      >
+                        ✎
+                      </button>
+                    </span>
                   )}
                 </td>
                 <td>
@@ -176,7 +231,18 @@ export const TransactionList = ({
                       <option value="month">month</option>
                     </select>
                   ) : (
-                    transaction.uom
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {transaction.uom}
+                      <button
+                        onClick={() => handleEdit(transaction, "uom")}
+                        disabled={isLoading}
+                        className="btn-small btn-edit"
+                        title="Edit Unit"
+                        style={{ marginLeft: 4 }}
+                      >
+                        ✎
+                      </button>
+                    </span>
                   )}
                 </td>
                 <td className="actions">
@@ -199,14 +265,6 @@ export const TransactionList = ({
                     </>
                   ) : (
                     <>
-                      <button
-                        onClick={() => handleEdit(transaction, "amount")}
-                        disabled={isLoading}
-                        className="btn-small btn-edit"
-                        title="Edit Amount"
-                      >
-                        ✎
-                      </button>
                       <button
                         onClick={() => onDelete(transaction.id)}
                         disabled={isLoading}
