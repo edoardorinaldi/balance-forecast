@@ -8,7 +8,8 @@ import { formatDateString, toDate } from "./forecast";
 export const loadTransactions = async (): Promise<Transaction[]> => {
   const { data, error } = await supabase
     .from("transactions")
-    .select("*");
+    .select("*")
+    .order("id", { ascending: false });
 
   if (error) {
     console.error("Error loading transactions:", error);
