@@ -9,27 +9,34 @@ export const getAccessToken = (): string | null => {
   return null;
 };
 
-export const signIn = (onSuccess: () => void, onError: () => void): void => {
-  const g = (window as any).google;
-  if (!g?.accounts?.oauth2) {
-    onError();
+export const signIn = (onSuccess: () => void, onError: (msg?: string) => void): void => {
+  if (!CLIENT_ID) {
+    onError("Google Client ID is not configured.");
     return;
   }
-  const client = g.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: SCOPES,
-    callback: (response: any) => {
-      if (response.error) {
-        onError();
-        return;
-      }
-      _accessToken = response.access_token;
-      // Subtract 60s so we refresh before actual expiry
-      _tokenExpiry = Date.now() + (response.expires_in - 60) * 1000;
-      onSuccess();
-    },
-  });
-  client.requestAccessToken({ prompt: "select_account" });
+  const g = (window as any).google;
+  if (!g?.accounts?.oauth2) {
+    onError("Google sign-in library not loaded. Please refresh and try again.");
+    return;
+  }
+  try {
+    const client = g.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: SCOPES,
+      callback: (response: any) => {
+        if (response.error) {
+          onError(`Sign-in error: ${response.error}`);
+          return;
+        }
+        _accessToken = response.access_token;
+        _tokenExpiry = Date.now() + (response.expires_in - 60) * 1000;
+        onSuccess();
+      },
+    });
+    client.requestAccessToken({ prompt: "select_account" });
+  } catch (err: any) {
+    onError(err?.message ?? "Sign-in failed. Please try again.");
+  }
 };
 
 export const signOut = (): void => {
