@@ -1,109 +1,125 @@
-import { supabase } from "./supabaseClient";
+import { getAccessToken } from "./googleAuth";
 import type { Transaction } from "../types";
 import { formatDateString, toDate } from "./forecast";
 
-/**
- * Load all transactions from the Supabase database.
- */
-export const loadTransactions = async (): Promise<Transaction[]> => {
-  const { data, error } = await supabase
-    .from("transactions")
-    .select("*")
-    .order("id", { ascending: false });
+const SHEET_ID = import.meta.env.VITE_GOOGLE_SHEET_ID;
+const SHEET_NAME = "Sheet1";
+const DATA_RANGE = `${SHEET_NAME}!A2:G`;
+const BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}`;
 
-  if (error) {
-    console.error("Error loading transactions:", error);
-    throw error;
-  }
-
-  return (data || []).map((row: any) => ({
-    id: row.id,
-    name: row.name,
-    amount: row.amount,
-    start_date: row.start_date,
-    end_date: row.end_date,
-    frequency: row.frequency,
-    uom: row.uom,
-  }));
+// Column order: id | name | amount | start_date | end_date | frequency | uom
+const FIELD_COL: Record<keyof Omit<Transaction, "id">, string> = {
+  name: "B",
+  amount: "C",
+  start_date: "D",
+  end_date: "E",
+  frequency: "F",
+  uom: "G",
 };
 
-/**
- * Insert a new transaction into the database.
- */
+const authHeaders = () => {
+  const token = getAccessToken();
+  if (!token) throw new Error("Authentication required");
+  return {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+};
+
+const rowToTransaction = (row: any[]): Transaction => ({
+  id: Number(row[0]),
+  name: String(row[1] ?? ""),
+  amount: Number(row[2]),
+  start_date: String(row[3] ?? ""),
+  end_date: String(row[4] ?? ""),
+  frequency: Number(row[5]),
+  uom: row[6] as Transaction["uom"],
+});
+
+const fetchRows = async (): Promise<{ rowIndex: number; data: any[] }[]> => {
+  const res = await fetch(`${BASE_URL}/values/${DATA_RANGE}`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`Sheets API error ${res.status}`);
+  const json = await res.json();
+  const rows: any[][] = json.values ?? [];
+  // rowIndex is 1-based sheet row (row 1 = header, so data starts at row 2)
+  return rows.map((data, i) => ({ rowIndex: i + 2, data }));
+};
+
+export const loadTransactions = async (): Promise<Transaction[]> => {
+  const rows = await fetchRows();
+  return rows.map((r) => rowToTransaction(r.data)).sort((a, b) => b.id - a.id);
+};
+
 export const addTransaction = async (
   transaction: Omit<Transaction, "id">
 ): Promise<Transaction> => {
-  const payload = {
-    name: transaction.name,
-    amount: transaction.amount,
-    start_date: formatDateString(toDate(transaction.start_date)),
-    end_date: formatDateString(toDate(transaction.end_date)),
-    frequency: transaction.frequency,
-    uom: transaction.uom,
-  };
+  const id = Date.now();
+  const startDate = formatDateString(toDate(transaction.start_date));
+  const endDate = formatDateString(toDate(transaction.end_date));
 
-  const { data, error } = await supabase
-    .from("transactions")
-    .insert([payload])
-    .select();
+  const res = await fetch(
+    `${BASE_URL}/values/${DATA_RANGE}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        values: [[id, transaction.name, transaction.amount, startDate, endDate, transaction.frequency, transaction.uom]],
+      }),
+    }
+  );
+  if (!res.ok) throw new Error(`Sheets API error ${res.status}`);
 
-  if (error) {
-    console.error("Error adding transaction:", error);
-    throw error;
-  }
-
-  if (!data || data.length === 0) {
-    throw new Error("No data returned after insert");
-  }
-
-  return {
-    id: data[0].id,
-    name: data[0].name,
-    amount: data[0].amount,
-    start_date: data[0].start_date,
-    end_date: data[0].end_date,
-    frequency: data[0].frequency,
-    uom: data[0].uom,
-  };
+  return { id, ...transaction, start_date: startDate, end_date: endDate };
 };
 
-/**
- * Delete a transaction from the database by ID.
- */
 export const deleteTransaction = async (transactionId: number): Promise<void> => {
-  const { error } = await supabase
-    .from("transactions")
-    .delete()
-    .eq("id", transactionId);
+  const rows = await fetchRows();
+  const found = rows.find((r) => Number(r.data[0]) === transactionId);
+  if (!found) throw new Error(`Transaction ${transactionId} not found`);
 
-  if (error) {
-    console.error("Error deleting transaction:", error);
-    throw error;
-  }
+  // sheetId 0 = first sheet tab (gid=0 in the sheet URL)
+  const res = await fetch(`${BASE_URL}:batchUpdate`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId: 0,
+              dimension: "ROWS",
+              startIndex: found.rowIndex - 1, // 0-based
+              endIndex: found.rowIndex,
+            },
+          },
+        },
+      ],
+    }),
+  });
+  if (!res.ok) throw new Error(`Sheets API error ${res.status}`);
 };
 
-/**
- * Update a specific field of a transaction by ID.
- */
 export const updateTransaction = async (
   transactionId: number,
   field: keyof Omit<Transaction, "id">,
   value: any
 ): Promise<void> => {
   let updateValue = value;
-
-  // Format dates when updating date fields
   if ((field === "start_date" || field === "end_date") && typeof value === "string") {
     updateValue = formatDateString(toDate(value));
   }
 
-  const { error } = await supabase
-    .from("transactions")
-    .update({ [field]: updateValue })
-    .eq("id", transactionId);
+  const rows = await fetchRows();
+  const found = rows.find((r) => Number(r.data[0]) === transactionId);
+  if (!found) throw new Error(`Transaction ${transactionId} not found`);
 
-  if (error) {
-    console.error(`Error updating transaction field ${field}:`, error);
-    throw error;
-  }
+  const cellRange = `${SHEET_NAME}!${FIELD_COL[field]}${found.rowIndex}`;
+  const res = await fetch(`${BASE_URL}/values/${cellRange}?valueInputOption=RAW`, {
+    method: "PUT",
+    headers: authHeaders(),
+    body: JSON.stringify({ values: [[updateValue]] }),
+  });
+  if (!res.ok) throw new Error(`Sheets API error ${res.status}`);
 };
