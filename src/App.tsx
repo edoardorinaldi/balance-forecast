@@ -15,7 +15,7 @@ function App() {
     setAuthError(null);
     signIn(
       () => setIsAuthenticated(true),
-      () => setAuthError("Sign-in failed or was cancelled.")
+      (msg) => setAuthError(msg ?? "Sign-in failed or was cancelled.")
     );
   };
 
