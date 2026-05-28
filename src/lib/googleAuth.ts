@@ -43,7 +43,7 @@ export const signIn = (onSuccess: () => void, onError: (msg?: string) => void): 
         }
         _accessToken = response.access_token;
         _tokenExpiry = Date.now() + (response.expires_in - 60) * 1000;
-        localStorage.setItem(LS_TOKEN, _accessToken);
+        localStorage.setItem(LS_TOKEN, _accessToken!);
         localStorage.setItem(LS_EXPIRY, String(_tokenExpiry));
         onSuccess();
       },
