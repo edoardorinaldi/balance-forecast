@@ -1,8 +1,21 @@
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
+const LS_TOKEN = "gauth_token";
+const LS_EXPIRY = "gauth_expiry";
 
 let _accessToken: string | null = null;
 let _tokenExpiry = 0;
+
+// Restore session from localStorage on module load
+const _stored = localStorage.getItem(LS_TOKEN);
+const _storedExpiry = Number(localStorage.getItem(LS_EXPIRY) ?? 0);
+if (_stored && Date.now() < _storedExpiry) {
+  _accessToken = _stored;
+  _tokenExpiry = _storedExpiry;
+}
+
+export const isSignedIn = (): boolean =>
+  !!_accessToken && Date.now() < _tokenExpiry;
 
 export const getAccessToken = (): string | null => {
   if (_accessToken && Date.now() < _tokenExpiry) return _accessToken;
@@ -30,6 +43,8 @@ export const signIn = (onSuccess: () => void, onError: (msg?: string) => void): 
         }
         _accessToken = response.access_token;
         _tokenExpiry = Date.now() + (response.expires_in - 60) * 1000;
+        localStorage.setItem(LS_TOKEN, _accessToken);
+        localStorage.setItem(LS_EXPIRY, String(_tokenExpiry));
         onSuccess();
       },
     });
@@ -45,4 +60,6 @@ export const signOut = (): void => {
   }
   _accessToken = null;
   _tokenExpiry = 0;
+  localStorage.removeItem(LS_TOKEN);
+  localStorage.removeItem(LS_EXPIRY);
 };
