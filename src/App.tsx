@@ -4,9 +4,45 @@ import { AddTransactionForm } from "./components/AddTransactionForm";
 import { TransactionList } from "./components/TransactionList";
 import { ForecastChart } from "./components/ForecastChart";
 import { calculateResults } from "./lib/forecast";
+import { signIn, signOut } from "./lib/googleAuth";
 import "./App.css";
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  const handleSignIn = () => {
+    setAuthError(null);
+    signIn(
+      () => setIsAuthenticated(true),
+      () => setAuthError("Sign-in failed or was cancelled.")
+    );
+  };
+
+  const handleSignOut = () => {
+    signOut();
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="login-screen">
+        <div className="login-card">
+          <h1>💸 Balance Forecast</h1>
+          <p>Sign in with Google to access your spreadsheet data.</p>
+          {authError && <div className="error-banner">{authError}</div>}
+          <button className="btn btn-primary" onClick={handleSignIn}>
+            Sign in with Google
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return <AuthenticatedApp onSignOut={handleSignOut} />;
+}
+
+function AuthenticatedApp({ onSignOut }: { onSignOut: () => void }) {
   const { transactions, futureTransactions, loading, error, add, remove, update } =
     useTransactions();
   const [startingBalance, setStartingBalance] = useState(1000);
@@ -75,6 +111,7 @@ function App() {
       <header className="app-header">
         <h1>💸 Balance Forecast</h1>
         <p>Forecast your account balance based on recurring transactions</p>
+        <button className="btn-signout" onClick={onSignOut}>Sign out</button>
       </header>
 
       <main className="app-main">
@@ -178,7 +215,7 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        <p>Balance Forecast - React + Supabase</p>
+        <p>Balance Forecast - React + Google Sheets</p>
       </footer>
     </div>
   );
