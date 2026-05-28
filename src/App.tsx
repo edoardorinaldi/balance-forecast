@@ -4,11 +4,11 @@ import { AddTransactionForm } from "./components/AddTransactionForm";
 import { TransactionList } from "./components/TransactionList";
 import { ForecastChart } from "./components/ForecastChart";
 import { calculateResults } from "./lib/forecast";
-import { signIn, signOut } from "./lib/googleAuth";
+import { signIn, signOut, isSignedIn } from "./lib/googleAuth";
 import "./App.css";
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(isSignedIn);
   const [authError, setAuthError] = useState<string | null>(null);
 
   const handleSignIn = () => {
