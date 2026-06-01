@@ -1,11 +1,8 @@
-import { getAccessToken } from "./googleAuth";
 import type { Transaction } from "../types";
 import { formatDateString, toDate } from "./forecast";
 
-const SHEET_ID = import.meta.env.VITE_GOOGLE_SHEET_ID;
 const SHEET_NAME = "Sheet1";
 const DATA_RANGE = `${SHEET_NAME}!A2:G`;
-const BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}`;
 
 // Column order: id | name | amount | start_date | end_date | frequency | uom
 const FIELD_COL: Record<keyof Omit<Transaction, "id">, string> = {
@@ -17,14 +14,15 @@ const FIELD_COL: Record<keyof Omit<Transaction, "id">, string> = {
   uom: "G",
 };
 
-const authHeaders = () => {
-  const token = getAccessToken();
-  if (!token) throw new Error("Authentication required");
-  return {
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
-  };
-};
+async function call(body: Record<string, unknown>): Promise<unknown> {
+  const res = await fetch("/api/sheets", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Sheets ${body.op} error ${res.status}: ${await res.text()}`);
+  return body.op === "read" ? res.json() : undefined;
+}
 
 const rowToTransaction = (row: any[]): Transaction => ({
   id: Number(row[0]),
@@ -37,12 +35,7 @@ const rowToTransaction = (row: any[]): Transaction => ({
 });
 
 const fetchRows = async (): Promise<{ rowIndex: number; data: any[] }[]> => {
-  const res = await fetch(`${BASE_URL}/values/${DATA_RANGE}`, {
-    headers: authHeaders(),
-  });
-  if (!res.ok) throw new Error(`Sheets API error ${res.status}`);
-  const json = await res.json();
-  const rows: any[][] = json.values ?? [];
+  const rows = (await call({ op: "read", range: DATA_RANGE })) as any[][];
   // rowIndex is 1-based sheet row (row 1 = header, so data starts at row 2)
   return rows.map((data, i) => ({ rowIndex: i + 2, data }));
 };
@@ -59,17 +52,11 @@ export const addTransaction = async (
   const startDate = formatDateString(toDate(transaction.start_date));
   const endDate = formatDateString(toDate(transaction.end_date));
 
-  const res = await fetch(
-    `${BASE_URL}/values/${DATA_RANGE}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
-    {
-      method: "POST",
-      headers: authHeaders(),
-      body: JSON.stringify({
-        values: [[id, transaction.name, transaction.amount, startDate, endDate, transaction.frequency, transaction.uom]],
-      }),
-    }
-  );
-  if (!res.ok) throw new Error(`Sheets API error ${res.status}`);
+  await call({
+    op: "append",
+    range: DATA_RANGE,
+    values: [[id, transaction.name, transaction.amount, startDate, endDate, transaction.frequency, transaction.uom]],
+  });
 
   return { id, ...transaction, start_date: startDate, end_date: endDate };
 };
@@ -80,25 +67,15 @@ export const deleteTransaction = async (transactionId: number): Promise<void> =>
   if (!found) throw new Error(`Transaction ${transactionId} not found`);
 
   // sheetId 0 = first sheet tab (gid=0 in the sheet URL)
-  const res = await fetch(`${BASE_URL}:batchUpdate`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({
-      requests: [
-        {
-          deleteDimension: {
-            range: {
-              sheetId: 0,
-              dimension: "ROWS",
-              startIndex: found.rowIndex - 1, // 0-based
-              endIndex: found.rowIndex,
-            },
-          },
-        },
-      ],
-    }),
+  await call({
+    op: "delete",
+    deleteRange: {
+      sheetId: 0,
+      dimension: "ROWS",
+      startIndex: found.rowIndex - 1, // 0-based
+      endIndex: found.rowIndex,
+    },
   });
-  if (!res.ok) throw new Error(`Sheets API error ${res.status}`);
 };
 
 export const updateTransaction = async (
@@ -116,10 +93,5 @@ export const updateTransaction = async (
   if (!found) throw new Error(`Transaction ${transactionId} not found`);
 
   const cellRange = `${SHEET_NAME}!${FIELD_COL[field]}${found.rowIndex}`;
-  const res = await fetch(`${BASE_URL}/values/${cellRange}?valueInputOption=RAW`, {
-    method: "PUT",
-    headers: authHeaders(),
-    body: JSON.stringify({ values: [[updateValue]] }),
-  });
-  if (!res.ok) throw new Error(`Sheets API error ${res.status}`);
+  await call({ op: "update", range: cellRange, values: [[updateValue]] });
 };
