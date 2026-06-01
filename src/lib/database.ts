@@ -1,7 +1,7 @@
 import type { Transaction } from "../types";
 import { formatDateString, toDate } from "./forecast";
 
-const SHEET_NAME = "Sheet1";
+const SHEET_NAME = "transactions";
 const DATA_RANGE = `${SHEET_NAME}!A2:G`;
 
 // Column order: id | name | amount | start_date | end_date | frequency | uom
