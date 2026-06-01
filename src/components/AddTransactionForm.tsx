@@ -13,11 +13,13 @@ import {
 
 interface AddTransactionFormProps {
   onAdd: (transaction: Omit<Transaction, "id">) => Promise<void>;
+  onSuccess?: () => void;
   isLoading?: boolean;
 }
 
 export const AddTransactionForm = ({
   onAdd,
+  onSuccess,
   isLoading = false,
 }: AddTransactionFormProps) => {
   const [formData, setFormData] = useState({
@@ -76,6 +78,7 @@ export const AddTransactionForm = ({
       });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
+      onSuccess?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     }

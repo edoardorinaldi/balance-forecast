@@ -13,6 +13,16 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Plus } from "lucide-react";
 
 function App() {
   const { transactions, futureTransactions, loading, error, add, remove, update } =
@@ -20,6 +30,7 @@ function App() {
   const [startingBalance, setStartingBalance] = useState(1000);
   const [forecastMonths, setForecastMonths] = useState(3);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   const handleAddTransaction = async (
     newTransaction: Omit<typeof transactions[0], "id">
@@ -103,22 +114,32 @@ function App() {
         ) : (
           <>
             <Card>
-              <CardHeader>
-                <CardTitle>Add Transaction</CardTitle>
-                <CardDescription>Create a new recurring transaction.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AddTransactionForm
-                  onAdd={handleAddTransaction}
-                  isLoading={isSubmitting}
-                />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Transactions</CardTitle>
-                <CardDescription>Upcoming recurring transactions.</CardDescription>
+              <CardHeader className="flex flex-row items-start justify-between gap-4">
+                <div className="space-y-1.5">
+                  <CardTitle>Transactions</CardTitle>
+                  <CardDescription>Upcoming recurring transactions.</CardDescription>
+                </div>
+                <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm">
+                      <Plus className="size-4" />
+                      Add Transaction
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add Transaction</DialogTitle>
+                      <DialogDescription>
+                        Create a new recurring transaction.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <AddTransactionForm
+                      onAdd={handleAddTransaction}
+                      onSuccess={() => setAddDialogOpen(false)}
+                      isLoading={isSubmitting}
+                    />
+                  </DialogContent>
+                </Dialog>
               </CardHeader>
               <CardContent>
                 <TransactionList
