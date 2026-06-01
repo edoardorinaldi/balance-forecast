@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTransactions } from "@/hooks/useTransactions";
 import { AddTransactionForm } from "@/components/AddTransactionForm";
 import { TransactionList } from "@/components/TransactionList";
 import { ForecastChart } from "@/components/ForecastChart";
 import { calculateResults } from "@/lib/forecast";
+import { loadStartingBalance, saveStartingBalance } from "@/lib/database";
 import {
   Card,
   CardContent,
@@ -27,10 +28,27 @@ import { Plus } from "lucide-react";
 function App() {
   const { transactions, futureTransactions, loading, error, add, remove, update } =
     useTransactions();
-  const [startingBalance, setStartingBalance] = useState(1000);
+  const [startingBalance, setStartingBalance] = useState(0);
   const [forecastMonths, setForecastMonths] = useState(3);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  // Load the starting balance from params!B1 on mount
+  useEffect(() => {
+    loadStartingBalance()
+      .then(setStartingBalance)
+      .catch((err) => console.error("Failed to load starting balance:", err));
+  }, []);
+
+  // Persist the starting balance back to params!B1
+  const handleStartingBalanceBlur = async () => {
+    if (!Number.isFinite(startingBalance)) return;
+    try {
+      await saveStartingBalance(startingBalance);
+    } catch (err) {
+      console.error("Failed to save starting balance:", err);
+    }
+  };
 
   const handleAddTransaction = async (
     newTransaction: Omit<typeof transactions[0], "id">
@@ -166,6 +184,7 @@ function App() {
                       step="0.01"
                       value={startingBalance}
                       onChange={(e) => setStartingBalance(parseFloat(e.target.value))}
+                      onBlur={handleStartingBalanceBlur}
                       disabled={isSubmitting}
                     />
                   </div>

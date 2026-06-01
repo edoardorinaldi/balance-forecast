@@ -4,6 +4,9 @@ import { formatDateString, toDate } from "./forecast";
 const SHEET_NAME = "transactions";
 const DATA_RANGE = `${SHEET_NAME}!A2:G`;
 
+// Starting balance lives in the "params" tab: A1 = "starting balance", B1 = value
+const STARTING_BALANCE_CELL = "params!B1";
+
 // Column order: id | name | amount | start_date | end_date | frequency | uom
 const FIELD_COL: Record<keyof Omit<Transaction, "id">, string> = {
   name: "B",
@@ -43,6 +46,17 @@ const fetchRows = async (): Promise<{ rowIndex: number; data: any[] }[]> => {
 export const loadTransactions = async (): Promise<Transaction[]> => {
   const rows = await fetchRows();
   return rows.map((r) => rowToTransaction(r.data)).sort((a, b) => b.id - a.id);
+};
+
+export const loadStartingBalance = async (): Promise<number> => {
+  const rows = (await call({ op: "read", range: STARTING_BALANCE_CELL })) as any[][];
+  const raw = rows?.[0]?.[0];
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : 0;
+};
+
+export const saveStartingBalance = async (value: number): Promise<void> => {
+  await call({ op: "update", range: STARTING_BALANCE_CELL, values: [[value]] });
 };
 
 export const addTransaction = async (
