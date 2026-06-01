@@ -1,5 +1,15 @@
 import { useState } from "react";
-import type { Transaction } from "../types";
+import type { Transaction, UnitOfMeasure } from "@/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface AddTransactionFormProps {
   onAdd: (transaction: Omit<Transaction, "id">) => Promise<void>;
@@ -16,21 +26,16 @@ export const AddTransactionForm = ({
     start_date: "",
     end_date: "",
     frequency: "1",
-    uom: "month" as const,
+    uom: "month" as UnitOfMeasure,
   });
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,7 +43,6 @@ export const AddTransactionForm = ({
     setError(null);
     setSuccess(false);
 
-    // Validation
     if (
       !formData.name ||
       !formData.amount ||
@@ -78,18 +82,22 @@ export const AddTransactionForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="add-transaction-form">
-      <h3>Add Transaction</h3>
-
-      {error && <div className="error-message">{error}</div>}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </div>
+      )}
       {success && (
-        <div className="success-message">Transaction added successfully!</div>
+        <div className="rounded-md border border-positive/30 bg-positive/10 px-3 py-2 text-sm text-positive">
+          Transaction added successfully!
+        </div>
       )}
 
-      <div className="form-row">
-        <div className="form-group">
-          <label htmlFor="name">Name</label>
-          <input
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-2">
+          <Label htmlFor="name">Name</Label>
+          <Input
             id="name"
             name="name"
             type="text"
@@ -100,9 +108,9 @@ export const AddTransactionForm = ({
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="amount">Amount (€)</label>
-          <input
+        <div className="grid gap-2">
+          <Label htmlFor="amount">Amount (€)</Label>
+          <Input
             id="amount"
             name="amount"
             type="number"
@@ -113,12 +121,10 @@ export const AddTransactionForm = ({
             disabled={isLoading}
           />
         </div>
-      </div>
 
-      <div className="form-row">
-        <div className="form-group">
-          <label htmlFor="start_date">Start Date</label>
-          <input
+        <div className="grid gap-2">
+          <Label htmlFor="start_date">Start Date</Label>
+          <Input
             id="start_date"
             name="start_date"
             type="date"
@@ -128,9 +134,9 @@ export const AddTransactionForm = ({
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="end_date">End Date</label>
-          <input
+        <div className="grid gap-2">
+          <Label htmlFor="end_date">End Date</Label>
+          <Input
             id="end_date"
             name="end_date"
             type="date"
@@ -139,12 +145,10 @@ export const AddTransactionForm = ({
             disabled={isLoading}
           />
         </div>
-      </div>
 
-      <div className="form-row">
-        <div className="form-group">
-          <label htmlFor="frequency">Frequency</label>
-          <input
+        <div className="grid gap-2">
+          <Label htmlFor="frequency">Frequency</Label>
+          <Input
             id="frequency"
             name="frequency"
             type="number"
@@ -157,25 +161,30 @@ export const AddTransactionForm = ({
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="uom">Unit of Measure</label>
-          <select
-            id="uom"
-            name="uom"
+        <div className="grid gap-2">
+          <Label htmlFor="uom">Unit of Measure</Label>
+          <Select
             value={formData.uom}
-            onChange={handleChange}
+            onValueChange={(value) =>
+              setFormData((prev) => ({ ...prev, uom: value as UnitOfMeasure }))
+            }
             disabled={isLoading}
           >
-            <option value="day">Day</option>
-            <option value="week">Week</option>
-            <option value="month">Month</option>
-          </select>
+            <SelectTrigger id="uom" className="w-full">
+              <SelectValue placeholder="Select unit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="day">Day</SelectItem>
+              <SelectItem value="week">Week</SelectItem>
+              <SelectItem value="month">Month</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      <button type="submit" disabled={isLoading}>
+      <Button type="submit" disabled={isLoading}>
         {isLoading ? "Adding..." : "Add Transaction"}
-      </button>
+      </Button>
     </form>
   );
 };

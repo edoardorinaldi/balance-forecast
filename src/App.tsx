@@ -1,10 +1,18 @@
 import { useState } from "react";
-import { useTransactions } from "./hooks/useTransactions";
-import { AddTransactionForm } from "./components/AddTransactionForm";
-import { TransactionList } from "./components/TransactionList";
-import { ForecastChart } from "./components/ForecastChart";
-import { calculateResults } from "./lib/forecast";
-import "./App.css";
+import { useTransactions } from "@/hooks/useTransactions";
+import { AddTransactionForm } from "@/components/AddTransactionForm";
+import { TransactionList } from "@/components/TransactionList";
+import { ForecastChart } from "@/components/ForecastChart";
+import { calculateResults } from "@/lib/forecast";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 function App() {
   const { transactions, futureTransactions, loading, error, add, remove, update } =
@@ -49,137 +57,188 @@ function App() {
   const handleDuplicateTransaction = async (transaction: typeof transactions[0]) => {
     setIsSubmitting(true);
     try {
-      // Remove id and create a new transaction object
       const { id, ...rest } = transaction;
-      // Optionally, tweak fields (e.g., add ' (copy)' to name)
       await add({ ...rest, name: rest.name + " (copy)" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Calculate forecast
   const forecastData = (() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
     const startDate = today;
     const endDate = new Date(today);
     endDate.setMonth(endDate.getMonth() + forecastMonths);
-
     return calculateResults(startDate, endDate, startingBalance, futureTransactions);
   })();
 
+  const finalBalance = forecastData.length
+    ? forecastData[forecastData.length - 1].balance
+    : startingBalance;
+  const totalCashFlow = forecastData.reduce((sum, item) => sum + item.cash_flow, 0);
+
   return (
-    <div className="app-container">
-      <header className="app-header">
-        <h1>💸 Balance Forecast</h1>
-        <p>Forecast your account balance based on recurring transactions</p>
+    <div className="min-h-screen bg-muted/30">
+      <header className="border-b bg-background">
+        <div className="mx-auto max-w-5xl px-4 py-6">
+          <h1 className="text-2xl font-semibold tracking-tight">💸 Balance Forecast</h1>
+          <p className="text-sm text-muted-foreground">
+            Forecast your account balance based on recurring transactions
+          </p>
+        </div>
       </header>
 
-      <main className="app-main">
-        {error && <div className="error-banner">{error}</div>}
+      <main className="mx-auto max-w-5xl space-y-6 px-4 py-6">
+        {error && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
+          </div>
+        )}
 
         {loading ? (
-          <div className="loading">Loading transactions...</div>
+          <div className="py-16 text-center text-muted-foreground">
+            Loading transactions...
+          </div>
         ) : (
           <>
-            {/* Add Transaction Form */}
-            <section className="section">
-              <AddTransactionForm onAdd={handleAddTransaction} isLoading={isSubmitting} />
-            </section>
+            <Card>
+              <CardHeader>
+                <CardTitle>Add Transaction</CardTitle>
+                <CardDescription>Create a new recurring transaction.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AddTransactionForm
+                  onAdd={handleAddTransaction}
+                  isLoading={isSubmitting}
+                />
+              </CardContent>
+            </Card>
 
-            {/* Transactions Table */}
-            <section className="section">
-              <TransactionList
-                transactions={futureTransactions}
-                onDelete={handleDeleteTransaction}
-                onEdit={handleUpdateTransaction}
-                onDuplicate={handleDuplicateTransaction}
-                isLoading={isSubmitting}
-              />
-            </section>
+            <Card>
+              <CardHeader>
+                <CardTitle>Transactions</CardTitle>
+                <CardDescription>Upcoming recurring transactions.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TransactionList
+                  transactions={futureTransactions}
+                  onDelete={handleDeleteTransaction}
+                  onEdit={handleUpdateTransaction}
+                  onDuplicate={handleDuplicateTransaction}
+                  isLoading={isSubmitting}
+                />
+              </CardContent>
+            </Card>
 
-            {/* Forecast Controls */}
-            <section className="section forecast-controls">
-              <h3>Forecast Settings</h3>
-              <div className="controls-row">
-                <div className="control-group">
-                  <label htmlFor="starting-balance">Starting Balance (€)</label>
-                  <input
-                    id="starting-balance"
-                    type="number"
-                    step="0.01"
-                    value={startingBalance}
-                    onChange={(e) => setStartingBalance(parseFloat(e.target.value))}
-                    disabled={isSubmitting}
-                  />
+            <Card>
+              <CardHeader>
+                <CardTitle>Forecast Settings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="grid gap-2">
+                    <Label htmlFor="starting-balance">Starting Balance (€)</Label>
+                    <Input
+                      id="starting-balance"
+                      type="number"
+                      step="0.01"
+                      value={startingBalance}
+                      onChange={(e) => setStartingBalance(parseFloat(e.target.value))}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="forecast-months">
+                      Months to Forecast: {forecastMonths}
+                    </Label>
+                    <input
+                      id="forecast-months"
+                      type="range"
+                      min="1"
+                      max="12"
+                      value={forecastMonths}
+                      onChange={(e) => setForecastMonths(parseInt(e.target.value))}
+                      disabled={isSubmitting}
+                      className="accent-primary"
+                    />
+                  </div>
                 </div>
+              </CardContent>
+            </Card>
 
-                <div className="control-group">
-                  <label htmlFor="forecast-months">
-                    Months to Forecast: {forecastMonths}
-                  </label>
-                  <input
-                    id="forecast-months"
-                    type="range"
-                    min="1"
-                    max="12"
-                    value={forecastMonths}
-                    onChange={(e) => setForecastMonths(parseInt(e.target.value))}
-                    disabled={isSubmitting}
-                  />
-                </div>
-              </div>
-            </section>
+            <Card>
+              <CardHeader>
+                <CardTitle>Balance Over Time</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ForecastChart
+                  data={forecastData}
+                  transactions={futureTransactions}
+                  startingBalance={startingBalance}
+                />
+              </CardContent>
+            </Card>
 
-            {/* Forecast Chart */}
-            <section className="section">
-              <ForecastChart
-                data={forecastData}
-                transactions={futureTransactions}
-                startingBalance={startingBalance}
-              />
-            </section>
-
-            {/* Summary Statistics */}
             {forecastData.length > 0 && (
-              <section className="section summary-stats">
-                <h3>Summary</h3>
-                <div className="stats-row">
-                  <div className="stat">
-                    <span className="stat-label">Starting Balance</span>
-                    <span className="stat-value">€{startingBalance.toFixed(2)}</span>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    <Stat label="Starting Balance" value={`€${startingBalance.toFixed(2)}`} />
+                    <Stat
+                      label="Final Balance"
+                      value={`€${finalBalance.toFixed(2)}`}
+                      tone={finalBalance < 0 ? "negative" : "positive"}
+                    />
+                    <Stat
+                      label="Total Cash Flow"
+                      value={`€${totalCashFlow.toFixed(2)}`}
+                      tone={totalCashFlow < 0 ? "negative" : "positive"}
+                    />
+                    <Stat label="Forecast Period" value={`${forecastMonths} month(s)`} />
                   </div>
-                  <div className="stat">
-                    <span className="stat-label">Final Balance</span>
-                    <span className="stat-value">
-                      €{forecastData[forecastData.length - 1].balance.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="stat">
-                    <span className="stat-label">Total Cash Flow</span>
-                    <span className="stat-value">
-                      €
-                      {forecastData
-                        .reduce((sum, item) => sum + item.cash_flow, 0)
-                        .toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="stat">
-                    <span className="stat-label">Forecast Period</span>
-                    <span className="stat-value">{forecastMonths} month(s)</span>
-                  </div>
-                </div>
-              </section>
+                </CardContent>
+              </Card>
             )}
           </>
         )}
       </main>
 
-      <footer className="app-footer">
-        <p>Balance Forecast - React + Google Sheets</p>
+      <footer className="border-t py-6 text-center text-sm text-muted-foreground">
+        Balance Forecast — React + Google Sheets
       </footer>
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "positive" | "negative";
+}) {
+  return (
+    <div className="rounded-lg border bg-card p-4">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div
+        className={
+          "mt-1 text-lg font-semibold " +
+          (tone === "negative"
+            ? "text-negative"
+            : tone === "positive"
+              ? "text-positive"
+              : "")
+        }
+      >
+        {value}
+      </div>
     </div>
   );
 }

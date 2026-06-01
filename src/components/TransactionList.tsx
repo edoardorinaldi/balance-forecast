@@ -1,6 +1,24 @@
 import { useState } from "react";
-import type { Transaction } from "../types";
-import { formatDateString } from "../lib/forecast";
+import { Check, Copy, Pencil, Trash2, X } from "lucide-react";
+import type { Transaction } from "@/types";
+import { formatDateString } from "@/lib/forecast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -37,14 +55,11 @@ export const TransactionList = ({
 
     try {
       let parsedValue: any = editValue;
-
-      // Parse value based on field type
       if (editField === "amount") {
         parsedValue = parseFloat(editValue);
       } else if (editField === "frequency") {
         parsedValue = parseInt(editValue);
       }
-      // Date fields are already strings
 
       await onEdit(transactionId, editField, parsedValue);
       setEditingId(null);
@@ -63,235 +78,230 @@ export const TransactionList = ({
     setError(null);
   };
 
+  const isEditing = (id: number, field: keyof Omit<Transaction, "id">) =>
+    editingId === id && editField === field;
+
+  // Editable cell: shows value + pencil, or the editor when active
+  const editableCell = (
+    transaction: Transaction,
+    field: keyof Omit<Transaction, "id">,
+    display: React.ReactNode,
+    editor: React.ReactNode
+  ) =>
+    isEditing(transaction.id, field) ? (
+      editor
+    ) : (
+      <div className="flex items-center gap-1.5">
+        <span>{display}</span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-6 text-muted-foreground"
+          onClick={() => handleEdit(transaction, field)}
+          disabled={isLoading}
+          title={`Edit ${field}`}
+        >
+          <Pencil className="size-3.5" />
+        </Button>
+      </div>
+    );
+
   if (transactions.length === 0) {
     return (
-      <div className="transaction-list">
-        <h3>Transactions</h3>
-        <p className="empty-message">No future transactions found.</p>
-      </div>
+      <p className="py-8 text-center text-sm text-muted-foreground">
+        No future transactions found.
+      </p>
     );
   }
 
   return (
-    <div className="transaction-list">
-      <h3>Transactions</h3>
-      {error && <div className="error-message">{error}</div>}
+    <div className="space-y-3">
+      {error && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
-      <div className="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Amount (€)</th>
-              <th>Start Date</th>
-              <th>End Date</th>
-              <th>Frequency</th>
-              <th>Unit</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {transactions.map((transaction) => (
-              <tr key={transaction.id}>
-                <td>{transaction.id}</td>
-                <td>
-                  {editingId === transaction.id && editField === "name" ? (
-                    <input
-                      type="text"
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      autoFocus
-                    />
-                  ) : (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      {transaction.name}
-                      <button
-                        onClick={() => handleEdit(transaction, "name")}
-                        disabled={isLoading}
-                        className="btn-small btn-edit"
-                        title="Edit Name"
-                        style={{ marginLeft: 4 }}
-                      >
-                        ✎
-                      </button>
-                    </span>
-                  )}
-                </td>
-                <td>
-                  {editingId === transaction.id && editField === "amount" ? (
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      autoFocus
-                    />
-                  ) : (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      {transaction.amount.toFixed(2)}
-                      <button
-                        onClick={() => handleEdit(transaction, "amount")}
-                        disabled={isLoading}
-                        className="btn-small btn-edit"
-                        title="Edit Amount"
-                        style={{ marginLeft: 4 }}
-                      >
-                        ✎
-                      </button>
-                    </span>
-                  )}
-                </td>
-                <td>
-                  {editingId === transaction.id && editField === "start_date" ? (
-                    <input
-                      type="date"
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      autoFocus
-                    />
-                  ) : (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      {formatDateString(
-                        typeof transaction.start_date === "string"
-                          ? new Date(transaction.start_date)
-                          : transaction.start_date
-                      )}
-                      <button
-                        onClick={() => handleEdit(transaction, "start_date")}
-                        disabled={isLoading}
-                        className="btn-small btn-edit"
-                        title="Edit Start Date"
-                        style={{ marginLeft: 4 }}
-                      >
-                        ✎
-                      </button>
-                    </span>
-                  )}
-                </td>
-                <td>
-                  {editingId === transaction.id && editField === "end_date" ? (
-                    <input
-                      type="date"
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      autoFocus
-                    />
-                  ) : (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      {formatDateString(
-                        typeof transaction.end_date === "string"
-                          ? new Date(transaction.end_date)
-                          : transaction.end_date
-                      )}
-                      <button
-                        onClick={() => handleEdit(transaction, "end_date")}
-                        disabled={isLoading}
-                        className="btn-small btn-edit"
-                        title="Edit End Date"
-                        style={{ marginLeft: 4 }}
-                      >
-                        ✎
-                      </button>
-                    </span>
-                  )}
-                </td>
-                <td>
-                  {editingId === transaction.id && editField === "frequency" ? (
-                    <input
-                      type="number"
-                      step="1"
-                      min="0"
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      autoFocus
-                    />
-                  ) : (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      {transaction.frequency}
-                      <button
-                        onClick={() => handleEdit(transaction, "frequency")}
-                        disabled={isLoading}
-                        className="btn-small btn-edit"
-                        title="Edit Frequency"
-                        style={{ marginLeft: 4 }}
-                      >
-                        ✎
-                      </button>
-                    </span>
-                  )}
-                </td>
-                <td>
-                  {editingId === transaction.id && editField === "uom" ? (
-                    <select
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      autoFocus
-                    >
-                      <option value="day">day</option>
-                      <option value="week">week</option>
-                      <option value="month">month</option>
-                    </select>
-                  ) : (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      {transaction.uom}
-                      <button
-                        onClick={() => handleEdit(transaction, "uom")}
-                        disabled={isLoading}
-                        className="btn-small btn-edit"
-                        title="Edit Unit"
-                        style={{ marginLeft: 4 }}
-                      >
-                        ✎
-                      </button>
-                    </span>
-                  )}
-                </td>
-                <td className="actions">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>ID</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Amount (€)</TableHead>
+            <TableHead>Start Date</TableHead>
+            <TableHead>End Date</TableHead>
+            <TableHead>Frequency</TableHead>
+            <TableHead>Unit</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {transactions.map((transaction) => (
+            <TableRow key={transaction.id}>
+              <TableCell className="text-muted-foreground">{transaction.id}</TableCell>
+
+              <TableCell className="font-medium">
+                {editableCell(
+                  transaction,
+                  "name",
+                  transaction.name,
+                  <Input
+                    className="h-8"
+                    type="text"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    autoFocus
+                  />
+                )}
+              </TableCell>
+
+              <TableCell
+                className={
+                  transaction.amount < 0 ? "text-negative" : "text-positive"
+                }
+              >
+                {editableCell(
+                  transaction,
+                  "amount",
+                  transaction.amount.toFixed(2),
+                  <Input
+                    className="h-8 w-28"
+                    type="number"
+                    step="0.01"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    autoFocus
+                  />
+                )}
+              </TableCell>
+
+              <TableCell>
+                {editableCell(
+                  transaction,
+                  "start_date",
+                  formatDateString(
+                    typeof transaction.start_date === "string"
+                      ? new Date(transaction.start_date)
+                      : transaction.start_date
+                  ),
+                  <Input
+                    className="h-8"
+                    type="date"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    autoFocus
+                  />
+                )}
+              </TableCell>
+
+              <TableCell>
+                {editableCell(
+                  transaction,
+                  "end_date",
+                  formatDateString(
+                    typeof transaction.end_date === "string"
+                      ? new Date(transaction.end_date)
+                      : transaction.end_date
+                  ),
+                  <Input
+                    className="h-8"
+                    type="date"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    autoFocus
+                  />
+                )}
+              </TableCell>
+
+              <TableCell>
+                {editableCell(
+                  transaction,
+                  "frequency",
+                  transaction.frequency,
+                  <Input
+                    className="h-8 w-20"
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    autoFocus
+                  />
+                )}
+              </TableCell>
+
+              <TableCell>
+                {editableCell(
+                  transaction,
+                  "uom",
+                  transaction.uom,
+                  <Select value={editValue} onValueChange={setEditValue}>
+                    <SelectTrigger size="sm" className="w-28">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="day">day</SelectItem>
+                      <SelectItem value="week">week</SelectItem>
+                      <SelectItem value="month">month</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </TableCell>
+
+              <TableCell>
+                <div className="flex items-center justify-end gap-1">
                   {editingId === transaction.id ? (
                     <>
-                      <button
+                      <Button
+                        size="icon"
+                        className="size-7"
                         onClick={() => handleSaveEdit(transaction.id)}
                         disabled={isLoading}
-                        className="btn-small btn-save"
+                        title="Save"
                       >
-                        Save
-                      </button>
-                      <button
+                        <Check className="size-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="size-7"
                         onClick={handleCancelEdit}
                         disabled={isLoading}
-                        className="btn-small btn-cancel"
+                        title="Cancel"
                       >
-                        Cancel
-                      </button>
+                        <X className="size-4" />
+                      </Button>
                     </>
                   ) : (
                     <>
-                      <button
-                        onClick={() => onDelete(transaction.id)}
-                        disabled={isLoading}
-                        className="btn-small btn-delete"
-                        title="Delete"
-                      >
-                        ✕
-                      </button>
-                      <button
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-7 text-muted-foreground"
                         onClick={() => onDuplicate(transaction)}
                         disabled={isLoading}
-                        className="btn-small btn-duplicate"
                         title="Duplicate"
-                        style={{ marginRight: 4 }}
                       >
-                        ⧉
-                      </button>
+                        <Copy className="size-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-7 text-destructive hover:text-destructive"
+                        onClick={() => onDelete(transaction.id)}
+                        disabled={isLoading}
+                        title="Delete"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
                     </>
                   )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 };
