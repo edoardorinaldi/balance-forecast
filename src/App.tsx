@@ -102,11 +102,6 @@ function App() {
     return calculateResults(startDate, endDate, startingBalance, futureTransactions);
   })();
 
-  const finalBalance = forecastData.length
-    ? forecastData[forecastData.length - 1].balance
-    : startingBalance;
-  const totalCashFlow = forecastData.reduce((sum, item) => sum + item.cash_flow, 0);
-
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="border-b bg-background">
@@ -220,30 +215,6 @@ function App() {
                 />
               </CardContent>
             </Card>
-
-            {forecastData.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                    <Stat label="Starting Balance" value={`€${startingBalance.toFixed(2)}`} />
-                    <Stat
-                      label="Final Balance"
-                      value={`€${finalBalance.toFixed(2)}`}
-                      tone={finalBalance < 0 ? "negative" : "positive"}
-                    />
-                    <Stat
-                      label="Total Cash Flow"
-                      value={`€${totalCashFlow.toFixed(2)}`}
-                      tone={totalCashFlow < 0 ? "negative" : "positive"}
-                    />
-                    <Stat label="Forecast Period" value={`${forecastMonths} month(s)`} />
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </>
         )}
       </main>
@@ -251,34 +222,6 @@ function App() {
       <footer className="border-t py-6 text-center text-sm text-muted-foreground">
         Balance Forecast — React + Google Sheets
       </footer>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone?: "positive" | "negative";
-}) {
-  return (
-    <div className="rounded-lg border bg-card p-4">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div
-        className={
-          "mt-1 text-lg font-semibold " +
-          (tone === "negative"
-            ? "text-negative"
-            : tone === "positive"
-              ? "text-positive"
-              : "")
-        }
-      >
-        {value}
-      </div>
     </div>
   );
 }
